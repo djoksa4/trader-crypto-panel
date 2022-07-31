@@ -1,0 +1,55 @@
+.details {
+  padding: 15px 20px;
+
+  &__table {
+    padding: 0 10px;
+    width: 100%;
+    border-collapse: collapse;
+
+    text-align: left;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+    font-weight: 500;
+
+    tbody {
+      color: #535353;
+      line-height: 1;
+    }
+
+    tr {
+      height: 50px;
+      border: rgba(0, 0, 0, 0.16) solid 1px;
+    }
+
+    th,
+    td {
+      padding: 0 10px;
+    }
+  }
+
+  &__button {
+    padding: 15px 15px;
+    margin-top: 10px;
+    color: white;
+
+    border: none;
+    border-radius: 3px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+
+    &-add {
+      background-color: #00d1d1;
+      &:hover {
+        background-color: #00b9b9;
+      }
+    }
+
+    &-remove {
+      background-color: #c41515;
+      &:hover {
+        background-color: #a31313;
+      }
+    }
+  }
+}
