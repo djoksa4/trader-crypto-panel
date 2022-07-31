@@ -2,28 +2,27 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 
+import { fetchData } from "../store/data-actions";
 import { dataActions } from "../store/data-slice";
 import "./Details.scss";
 
 const Details = () => {
   const dispatch = useDispatch();
   const params = useParams();
-  const pairData = useSelector((state) =>
-    state.data.pairs.find((pair) => pair.pair === params.pair)
-  );
-  const isLoggedIn = useSelector((state) => state.data.isLoggedIn);
   const [pairInfo, setPairInfo] = useState({});
 
+  const favorited = useSelector((state) =>
+    state.data.favorites.includes(params.pair)
+  );
+
+  const isLoggedIn = useSelector((state) => state.data.isLoggedIn);
+
+  // Load details from API
   useEffect(() => {
     const getInfo = async () => {
       try {
-        const response = await fetch(`/v1/pubticker/${params.pair}`);
-        if (!response.ok) {
-          throw new Error("Fetch error!");
-        }
-        const data = await response.json();
-
-        setPairInfo(data);
+        const pairData = await fetchData(`/v1/pubticker/${params.pair}`);
+        setPairInfo(pairData);
       } catch (err) {
         console.log(err);
       }
@@ -32,6 +31,7 @@ const Details = () => {
     getInfo();
   }, []);
 
+  // Add / remove favorite handler
   const toggleFavHandler = () => {
     dispatch(dataActions.toggleFav(params.pair));
   };
@@ -61,12 +61,12 @@ const Details = () => {
         <button
           onClick={toggleFavHandler}
           className={
-            pairData.fav
+            favorited
               ? "details__button-remove details__button"
               : "details__button-add details__button"
           }
         >
-          {pairData.fav ? "Remove from Favorites" : "Add to Favorites"}
+          {favorited ? "Remove from Favorites" : "Add to Favorites"}
         </button>
       )}
     </div>

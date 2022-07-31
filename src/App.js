@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 
 import { dataActions } from "./store/data-slice";
+import { fetchData, setupWebsocketSub } from "./store/data-actions";
 
 import ScrollToTop from "./Utility Components/ScrollToTop";
 import PageNotFound from "./pages/PageNotFound";
@@ -10,83 +11,47 @@ import NavBar from "./Components/NavBar";
 import LiveList from "./pages/LiveList";
 import Details from "./pages/Details";
 
+let isInitial = true;
+
 const App = () => {
   const dispatch = useDispatch();
   const isLoggedIn = useSelector((state) => state.data.isLoggedIn);
+  const favorites = useSelector((state) => state.data.favorites);
 
+  // INITIAL LOAD SIDE EFFECTS
   useEffect(() => {
     const setupConnection = async () => {
-      // GET FIRST 5 CURRENCY PAIRS FROM THE REST API
-      const getPairs = async () => {
-        try {
-          const response = await fetch("/v1/symbols");
-          if (!response.ok) {
-            throw new Error("Fetch error!");
-          }
-          const data = await response.json();
+      // Get initial pairs and transform them
+      const allPairs = await fetchData("/v1/symbols");
+      const pairs = allPairs.slice(0, 5).map((pair) => pair.toUpperCase());
 
-          return data.slice(0, 5).map((pair) => pair.toUpperCase());
-        } catch (err) {
-          console.log(err);
-        }
-      };
-
-      const pairs = await getPairs();
-
-      // SETUP WEBSOCKET SUBSCRIPTIONS
-      const ws = new WebSocket("wss://api.bitfinex.com/ws/1");
-
-      // RECIEVE AND HANDLE WEBSOCKET RESPONSE (SUBSCRIPTIONS AND DATA)
-      ws.onmessage = (msg) => {
-        const parsedMsg = JSON.parse(msg.data);
-
-        if (!Array.isArray(parsedMsg) && parsedMsg.event === "subscribed") {
-          // SUBSCRIPTION RESPONSE
-
-          dispatch(
-            dataActions.onSubsrcibe({
-              pair: parsedMsg.pair,
-              channelId: parsedMsg.chanId,
-              fav: false,
-            })
-          );
-        } else if (Array.isArray(parsedMsg) && parsedMsg[1] !== "hb") {
-          // ACTUAL DATA STREAM
-
-          dispatch(
-            dataActions.update({
-              channelId: parsedMsg[0],
-              lastPrice: parsedMsg[7],
-              dailyChange: parsedMsg[5],
-              dailyChangePercent: parsedMsg[6],
-              dailyHigh: parsedMsg[9],
-              dailyLow: parsedMsg[10],
-            })
-          );
-        }
-      };
-
-      // REQUEST WEBSOCKET SUBSCRIPTIONS FOR EACH OF THE PAIRS
-      ws.onopen = (event) => {
-        pairs.forEach((pair) => {
-          ws.send(
-            JSON.stringify({
-              event: "subscribe",
-              channel: "ticker",
-              pair: pair,
-            })
-          );
-        });
-      };
+      // Setup websocket and handle reponses thunk
+      dispatch(setupWebsocketSub(pairs));
     };
+
     setupConnection();
 
-    // PERSISTENT LOGIN
+    // Persistent login
     const persistentLogin = localStorage.getItem("userLoggedIn");
     if (persistentLogin === "1") {
       dispatch(dataActions.onLogin());
     }
+
+    // Persistent favorites load
+    const retrievedFavorites = JSON.parse(localStorage.getItem("favorites"));
+    dispatch(dataActions.loadFavorites(retrievedFavorites || []));
   }, []);
+
+  // PERSISTENT FAVORITES SIDE EFFECTS
+  useEffect(() => {
+    // Prevent pushing an empty array when redux state is initiated
+    if (isInitial) {
+      isInitial = false;
+      return;
+    }
+
+    localStorage.setItem("favorites", JSON.stringify(favorites));
+  }, [favorites]);
 
   return (
     <>
@@ -98,12 +63,12 @@ const App = () => {
             <Route path="/" element={<Navigate replace to="/home" />} />
             <Route path="/home" element={<LiveList />} />
 
-            {isLoggedIn && (
-              <Route
-                path="/favorites"
-                element={<LiveList content="favorites" />}
-              />
-            )}
+            <Route
+              path="/favorites"
+              element={
+                isLoggedIn ? <LiveList /> : <Navigate replace to="/home" />
+              }
+            />
 
             <Route path="/details">
               <Route index element={<Navigate replace to={"/home"} />} />

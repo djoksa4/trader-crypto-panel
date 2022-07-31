@@ -5,6 +5,7 @@ const dataSlice = createSlice({
   initialState: {
     pairs: [],
     isLoggedIn: false,
+    favorites: [],
   },
   reducers: {
     onSubsrcibe(state, action) {
@@ -32,16 +33,23 @@ const dataSlice = createSlice({
     },
 
     toggleFav(state, action) {
-      state.pairs.forEach((pair) => {
-        if (pair.pair === action.payload) {
-          pair.fav = !pair.fav;
-        }
-      });
+      if (state.favorites.includes(action.payload)) {
+        // already favorited -> remove from favorites
+        state.favorites = state.favorites.filter(
+          (pair) => pair !== action.payload
+        );
+      } else {
+        // not favorited -> add to favorites
+        state.favorites.push(action.payload);
+      }
+    },
+
+    loadFavorites(state, action) {
+      state.favorites = action.payload;
     },
 
     onLogin(state) {
       state.isLoggedIn = true;
-      localStorage.setItem("userLoggedIn", 1);
     },
   },
 });

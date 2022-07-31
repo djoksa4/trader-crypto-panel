@@ -5,11 +5,12 @@ import "./LiveList.scss";
 
 const LiveList = () => {
   const location = useLocation();
+
   const allPairs = useSelector((state) => state.data.pairs);
-
-  // console.log(location); location.pathname = '/home'
-
-  const favoritedPairs = allPairs.filter((pair) => pair.fav === true);
+  const favorites = useSelector((state) => state.data.favorites);
+  const favoritedPairs = allPairs.filter((pair) =>
+    favorites.includes(pair.pair)
+  );
 
   const rows = (location.pathname === "/home" ? allPairs : favoritedPairs).map(
     (pair) => (

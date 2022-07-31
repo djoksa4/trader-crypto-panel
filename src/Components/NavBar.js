@@ -10,6 +10,7 @@ const NavBar = () => {
 
   const loginHandler = () => {
     dispatch(dataActions.onLogin());
+    localStorage.setItem("userLoggedIn", 1);
   };
 
   return (
